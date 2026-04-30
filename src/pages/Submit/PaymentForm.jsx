@@ -20,7 +20,7 @@ const PaymentForm = () => {
   
   const [formData, setFormData] = useState({
     name: '',
-    mobile: '', // ADDED MOBILE
+    mobile: '', 
     usn: '',
     year: YEARS[0],
     branch: BRANCHES[0],
@@ -73,7 +73,7 @@ const PaymentForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 1. VALDIATION LAYER: Prevent empty submissions
+    // Validation Layer
     const requiredFields = {
       name: 'Full Name',
       mobile: 'Mobile Number',
@@ -85,11 +85,10 @@ const PaymentForm = () => {
     for (const key in requiredFields) {
       if (!formData[key] || formData[key].trim() === '') {
         alert(`Please enter your ${requiredFields[key]}.`);
-        return; // STOP the function here, don't go to API
+        return;
       }
     }
 
-    // 2. DUPLICATE CHECK
     if (duplicates.utr) {
       alert("UTR already exists. Please check your details.");
       return;
@@ -208,6 +207,7 @@ const PaymentForm = () => {
                 onSubmit={handleSubmit}
             >
                 <div className="text-center">
+                {/* QR Code Section - Kept as the sole payment method */}
                 <div className="inline-block p-4 bg-white rounded-2xl shadow-neon-cyan mb-6 transform hover:scale-105 transition-transform">
                     <QRCodeCanvas value={upiLink} size={200} />
                 </div>
@@ -215,14 +215,7 @@ const PaymentForm = () => {
                 <div className="mb-2">
                     <span className="text-4xl font-black text-neonCyan drop-shadow-[0_0_10px_rgba(0,245,255,0.5)]">₹{amount}</span>
                 </div>
-                <p className="text-xs text-gray-400 mb-6 tracking-wide">Scan the QR code or use the link below</p>
-
-                <div className="flex flex-col items-center gap-3 mb-6">
-                    <a href={upiLink} className="px-8 py-3 bg-neonViolet text-white font-bold rounded-full shadow-neon-violet hover:scale-105 transition-all active:scale-95 flex items-center gap-2">
-                        <span>🚀 Pay Now via UPI App</span>
-                    </a>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">UPI ID: <span className="text-gray-300 font-mono">{MY_UPI_ID}</span></p>
-                </div>
+                <p className="text-xs text-gray-400 mb-8 tracking-wide">Scan the QR code with any UPI app to pay</p>
                 </div>
 
                 <div className="relative overflow-hidden p-4 border border-neonViolet/30 bg-neonViolet/10 rounded-2xl text-center group">
