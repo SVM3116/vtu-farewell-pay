@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GlassCard from '../../components/ui/GlassCard';
 import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input'; // New Elite Input
+import Input from '../../components/ui/Input';
 import { loginAdmin } from '../../api/auth';
 
 const AdminLogin = () => {
@@ -26,7 +26,6 @@ const AdminLogin = () => {
 
   return (
     <div className="relative flex justify-center items-center min-h-[80vh] p-6">
-      {/* ATMOSPHERIC LIGHTING */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-neonViolet/20 rounded-full blur-[120px] pointer-events-none" />
       
       <GlassCard className="relative w-full max-w-md p-10 text-center border-neonViolet backdrop-blur-2xl shadow-2xl">
