@@ -1,13 +1,3 @@
-Since you've built a high-end, cinematic project, your GitHub README should look
-just as professional. A great README not only documents the project but also
-acts as a portfolio piece for you as a developer.
-
-I have written a Comprehensive, Professional README. It includes sections for
-the tech stack, the a unique "Business Logic" section (to highlight the
-resubmission and security features), and clear setup instructions.
-
-Create a file named README.md in your root folder and paste this entire block:
-
 # 🎓 Farewell '26 | Payment Management System
 **Institution:** Visvesvaraya Technological University (VTU), Belagavi  
 **Event:** Farewell Day for the 4th Year Batch of 2022–23  
