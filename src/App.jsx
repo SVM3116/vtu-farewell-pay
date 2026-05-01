@@ -70,8 +70,8 @@ const Landing = () => (
         <Link 
           to="/submit" 
           className="group relative px-10 py-4 bg-neonCyan text-darkBg font-black rounded-full hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(0,245,255,0.4)] hover:shadow-[0_0_30px_rgba(0,245,255,0.6)] text-center"
-        >
-          Secure Your Spot Now
+        >Make Your Contribution
+          
         </Link>
         
         <Link 
