@@ -7,7 +7,7 @@ export const DIVISIONS = ['A', 'B'];
 // UPDATED FEE STRUCTURE
 export const FEE_STRUCTURE = {
   '1st Year': 150,  // Updated from 100 to 150
-  '2nd Year': 100,  // Stays 100
+  '2nd Year': 150,  // Stays 100
   '3rd Year': 400,  // Stays 400
 };
 
