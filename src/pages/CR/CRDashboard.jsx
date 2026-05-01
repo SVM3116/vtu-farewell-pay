@@ -6,13 +6,16 @@ import GlassCard from '../../components/ui/GlassCard';
 import Button from '../../components/ui/Button';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Input from '../../components/ui/Input';
-import Select from '../../components/ui/Select'; // Import the Elite Select component
+import Select from '../../components/ui/Select';
 
 const CRDashboard = () => {
   const cr = getCurrentCR();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
   
+  // --- NEW: Status Filter State ---
+  const [statusFilter, setStatusFilter] = useState('all');
+
   const [rejectModal, setRejectModal] = useState({
     isOpen: false,
     paymentId: null,
@@ -46,6 +49,12 @@ const CRDashboard = () => {
     else setPayments(data || []);
     setLoading(false);
   };
+
+  // --- NEW: Frontend Filtering Logic ---
+  // This filters the 'payments' array in memory without calling the database again
+  const filteredPayments = payments.filter(p => 
+    statusFilter === 'all' || p.status === statusFilter
+  );
 
   const formatPaymentTime = (timestamp) => {
     if (!timestamp) return "N/A";
@@ -122,6 +131,30 @@ const CRDashboard = () => {
         <Button variant="violet" onClick={logoutCR} className="w-full md:w-auto">Logout</Button>
       </div>
 
+      {/* --- NEW: STATUS FILTER UI (Pill Style) --- */}
+      <div className="flex flex-wrap gap-2 items-center justify-start md:justify-start">
+        <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mr-2">Filter by:</span>
+        {[
+          { id: 'all', label: 'All' },
+          { id: 'pending', label: 'Pending' },
+          { id: 'approved', label: 'Approved' },
+          { id: 'rejected', label: 'Rejected' },
+          { id: 'disputed', label: 'Disputed' }
+        ].map((filter) => (
+          <button
+            key={filter.id}
+            onClick={() => setStatusFilter(filter.id)}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 border ${
+              statusFilter === filter.id 
+                ? 'bg-neonCyan/20 border-neonCyan text-neonCyan shadow-[0_0_10px_rgba(0,245,255,0.3)]' 
+                : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/30'
+            }`}
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-4">
         {loading ? (
           <div className="text-center p-10 text-gray-500 animate-pulse">Loading payments...</div>
@@ -144,7 +177,8 @@ const CRDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {payments.map(p => (
+                    {/* WE NOW MAP OVER filteredPayments INSTEAD OF payments */}
+                    {filteredPayments.map(p => (
                       <tr key={p.id} className="border-b border-glassBorder hover:bg-white/5 transition-colors">
                         <td className="p-3">{p.name}</td>
                         <td className="p-3 font-mono text-xs">{p.usn}</td>
@@ -166,7 +200,8 @@ const CRDashboard = () => {
 
             {/* MOBILE CARDS */}
             <div className="grid grid-cols-1 gap-4 md:hidden">
-              {payments.map(p => (
+              {/* WE NOW MAP OVER filteredPayments INSTEAD OF payments */}
+              {filteredPayments.map(p => (
                 <GlassCard key={p.id} className="p-4 space-y-4 border-white/10">
                   <div className="flex justify-between items-start">
                     <div>
@@ -201,7 +236,7 @@ const CRDashboard = () => {
                   </div>
                 </GlassCard>
               ))}
-              {payments.length === 0 && <div className="text-center p-10 text-gray-500">No payments found for your scope.</div>}
+              {filteredPayments.length === 0 && <div className="text-center p-10 text-gray-500">No payments found matching this filter.</div>}
             </div>
           </>
         )}
@@ -228,7 +263,6 @@ const CRDashboard = () => {
               <div className="space-y-4">
                 <div className="flex flex-col gap-2">
                   <label className="text-xs text-gray-500 ml-1">Select Reason</label>
-                  {/* UPDATED: Using the custom Select component instead of native select */}
                   <Select 
                     options={REJECTION_OPTIONS} 
                     value={rejectModal.reason} 
