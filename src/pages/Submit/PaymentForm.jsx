@@ -201,15 +201,21 @@ const PaymentForm = () => {
                 className="space-y-6 md:space-y-8"
                 onSubmit={handleSubmit}
             >
-                <div className="text-center">
-                <div className="inline-block p-3 md:p-4 bg-white rounded-2xl shadow-neon-cyan mb-4 md:mb-6 transform hover:scale-105 transition-transform">
-                    <QRCodeCanvas value={upiLink} size={window.innerWidth < 768 ? 180 : 200} />
-                </div>
-                
-                <div className="mb-2">
-                    <span className="text-3xl md:text-4xl font-black text-neonCyan drop-shadow-[0_0_10px_rgba(0,245,255,0.5)]">₹{amount}</span>
-                </div>
-                <p className="text-[10px] md:text-xs text-gray-400 mb-6 tracking-wide">Scan the QR code with any UPI app to pay</p>
+                                <div className="text-center">
+                  {/* NEW: Banking Name Section */}
+                  <p className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">
+                    Banking Name: <span className="text-white font-black">MANOJ KUMAR V</span>
+                  </p>
+
+                  {/* QR Code Section */}
+                  <div className="inline-block p-4 bg-white rounded-2xl shadow-neon-cyan mb-6 transform hover:scale-105 transition-transform">
+                      <QRCodeCanvas value={upiLink} size={window.innerWidth < 768 ? 180 : 200} />
+                  </div>
+                  
+                  <div className="mb-2">
+                      <span className="text-3xl md:text-4xl font-black text-neonCyan drop-shadow-[0_0_10px_rgba(0,245,255,0.5)]">₹{amount}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mb-8 tracking-wide">Scan the QR code with any UPI app to pay</p>
                 </div>
 
                 <div className="relative overflow-hidden p-3 md:p-4 border border-neonViolet/30 bg-neonViolet/10 rounded-2xl text-center group">

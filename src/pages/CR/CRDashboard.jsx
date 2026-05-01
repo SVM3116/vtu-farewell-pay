@@ -6,6 +6,7 @@ import GlassCard from '../../components/ui/GlassCard';
 import Button from '../../components/ui/Button';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Input from '../../components/ui/Input';
+import Select from '../../components/ui/Select'; // Import the Elite Select component
 
 const CRDashboard = () => {
   const cr = getCurrentCR();
@@ -227,17 +228,14 @@ const CRDashboard = () => {
               <div className="space-y-4">
                 <div className="flex flex-col gap-2">
                   <label className="text-xs text-gray-500 ml-1">Select Reason</label>
-                  <select 
-                    className="input-glass w-full"
-                    value={rejectModal.reason}
-                    onChange={(e) => {
-                      const val = e.target.value;
+                  {/* UPDATED: Using the custom Select component instead of native select */}
+                  <Select 
+                    options={REJECTION_OPTIONS} 
+                    value={rejectModal.reason} 
+                    onChange={(val) => {
                       setRejectModal(prev => ({ ...prev, reason: val, isOther: val === 'Other' }));
-                    }}
-                  >
-                    <option value="">-- Choose Reason --</option>
-                    {REJECTION_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
+                    }} 
+                  />
                 </div>
 
                 {rejectModal.isOther && (
