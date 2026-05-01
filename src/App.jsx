@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 // Layouts
 import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer'; // Added Footer
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import PageWrapper from './components/layout/PageWrapper';
 
@@ -27,7 +28,6 @@ const Landing = () => (
     <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-neonViolet/10 rounded-full blur-[120px] pointer-events-none" />
 
     <div className="relative z-10 w-full max-w-4xl px-6 flex flex-col items-center text-center">
-      
       {/* MAIN HERO TEXT */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }} 
@@ -38,7 +38,7 @@ const Landing = () => (
         <h1 className="text-5xl md:text-7xl font-black neon-text-gradient leading-tight">
           One Last Grand <br className="hidden md:block" /> Celebration
         </h1>
-        <p className="text-gray-400 text-base md:text-xl max-w-2xl mx-auto leading-relaxed">
+        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
           Batch 2022–23 | Join us for a cinematic farewell on <span className="text-neonCyan font-bold">8th & 9th May 2026</span>.
         </p>
       </motion.div>
@@ -48,7 +48,7 @@ const Landing = () => (
         initial={{ opacity: 0, scale: 0.9 }} 
         animate={{ opacity: 1, scale: 1 }} 
         transition={{ delay: 0.4, duration: 0.6 }}
-        className="mt-10 md:mt-16 relative p-6 md:p-8 max-w-lg"
+        className="mt-12 md:mt-16 relative p-6 md:p-8 max-w-lg"
       >
         <div className="absolute inset-0 bg-neonViolet/5 blur-2xl rounded-full" />
         <p className="relative z-10 text-gray-300 italic text-sm md:text-lg font-medium leading-relaxed">
@@ -69,14 +69,14 @@ const Landing = () => (
       >
         <Link 
           to="/submit" 
-          className="group relative px-8 md:px-12 py-4 bg-neonCyan text-darkBg font-black rounded-full hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(0,245,255,0.4)] hover:shadow-[0_0_30px_rgba(0,245,255,0.6)] text-center"
+          className="group relative px-10 py-4 bg-neonCyan text-darkBg font-black rounded-full hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(0,245,255,0.4)] hover:shadow-[0_0_30px_rgba(0,245,255,0.6)] text-center"
         >
-          Submit Payment
+          Secure Your Spot Now
         </Link>
         
         <Link 
           to="/status" 
-          className="px-8 md:px-12 py-4 border border-neonCyan/50 text-neonCyan font-bold rounded-full hover:bg-neonCyan/10 transition-all duration-300 backdrop-blur-sm text-center"
+          className="px-10 py-4 border border-neonCyan/50 text-neonCyan font-bold rounded-full hover:bg-neonCyan/10 transition-all duration-300 backdrop-blur-sm text-center"
         >
           Check My Status
         </Link>
@@ -96,8 +96,8 @@ const Landing = () => (
           </div>
           <p className="text-[10px] md:text-xs text-gray-400 leading-relaxed text-center">
             This is an official internal portal for the <span className="text-white font-semibold">VTU Batch 2022-23 Farewell</span>. 
-            We do <span className="text-red-400 font-bold">NOT</span> collect bank passwords or OTPs. 
-            If you see a browser warning, click <span className="text-white underline">Advanced</span> &rarr; <span className="text-white underline">Proceed</span>.
+            We do <span className="text-red-400 font-bold">NOT</span> collect bank passwords, OTPs, or credit card details. 
+            If you see a browser warning, click <span className="text-white underline">Advanced</span> &rarr; <span className="text-white underline">Proceed</span> to continue.
           </p>
         </div>
       </motion.div>
@@ -144,9 +144,13 @@ function AppRoutes() {
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-darkBg text-white selection:bg-neonCyan/30">
+      {/* flex flex-col and min-h-screen ensures the footer stays at the bottom */}
+      <div className="min-h-screen bg-darkBg text-white flex flex-col">
         <Navbar />
-        <AppRoutes />
+        <main className="flex-grow">
+          <AppRoutes />
+        </main>
+        <Footer />
       </div>
     </Router>
   );
