@@ -24,3 +24,13 @@ body {
     @apply bg-clip-text text-transparent bg-neon-gradient font-bold;
   }
 }
+
+/* Styles for the datetime-local input picker icon and text */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) grayscale(1) brightness(2);
+  cursor: pointer;
+}
+
+input[type="datetime-local"] {
+  color-scheme: dark; /* Tells the browser to use the dark mode picker */
+}

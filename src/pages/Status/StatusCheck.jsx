@@ -32,6 +32,19 @@ const StatusCheck = () => {
     }
   };
 
+  // Helper to format the rejection/verification date
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
   return (
     <div className="relative flex justify-center items-center min-h-[80vh] p-6">
       {/* ATMOSPHERIC LIGHTING */}
@@ -92,28 +105,40 @@ const StatusCheck = () => {
                 </div>
               </div>
 
-              {/* Verified details ONLY for approved payments */}
               {payment.status === 'approved' && (
                 <p className="text-xs text-green-400/70 italic">
-                  Verified by {payment.verified_by} on {new Date(payment.verified_at).toLocaleDateString()}
+                  Verified by {payment.verified_by} on {formatDate(payment.verified_at)}
                 </p>
               )}
 
-              {/* SPECIFIC DISPUTED MESSAGE */}
+              {payment.status === 'rejected' && (
+                <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20 space-y-3">
+                  <div className="text-center">
+                    <p className="text-red-400 font-bold text-sm uppercase tracking-tight">Rejection Reason:</p>
+                    <p className="text-gray-200 text-sm italic">
+                      {payment.rejection_reason || "No specific reason provided."}
+                    </p>
+                  </div>
+
+                  {/* REJECTION METADATA */}
+                  <div className="pt-3 border-t border-red-500/20 text-[11px] text-gray-400 flex justify-between items-center px-2">
+                    <span>Rejected by: <span className="text-gray-200 font-medium">{payment.verified_by || 'CR'}</span></span>
+                    <span>Time: <span className="text-gray-200 font-medium">{formatDate(payment.verified_at)}</span></span>
+                  </div>
+
+                  <p className="text-[11px] text-red-300/80 italic text-center pt-1">
+                    If any information is wrong, please contact your CR immediately.
+                  </p>
+                </div>
+              )}
+
               {payment.status === 'disputed' && (
                 <p className="text-sm text-amber-400 font-medium animate-pulse">
                   Your payment is currently under admin review. Please wait or contact your CR.
                 </p>
               )}
 
-              {payment.status === 'rejected' && (
-                <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20">
-                  <p className="text-red-400 font-medium mb-2">Reason: {payment.rejection_reason}</p>
-                </div>
-              )}
-
               <div className="pt-4">
-                {/* Resubmit Button ONLY for rejected payments */}
                 {payment.status === 'rejected' && (
                   <Button variant="violet" onClick={() => window.location.href = '/submit'}>
                     Resubmit Payment
