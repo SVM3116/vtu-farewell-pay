@@ -20,7 +20,7 @@ const Footer = () => {
           </p>
           
           <p className="text-[10px] md:text-xs text-gray-500 mt-2 uppercase tracking-[0.2em] font-medium">
-            3rd Sem, CSBS • Educational Project for Learning Purpose
+            3rd Year, CSBS • Educational Project for Learning Purpose
           </p>
         </div>
 
