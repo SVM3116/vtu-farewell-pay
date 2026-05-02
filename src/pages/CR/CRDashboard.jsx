@@ -12,9 +12,11 @@ const CRDashboard = () => {
   const cr = getCurrentCR();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
-  
-  // --- NEW: Status Filter State ---
   const [statusFilter, setStatusFilter] = useState('all');
+  
+  // --- PAGINATION STATE ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 20;
 
   const [rejectModal, setRejectModal] = useState({
     isOpen: false,
@@ -30,6 +32,28 @@ const CRDashboard = () => {
     "Note mismatch",
     "Other"
   ];
+
+  // --- TIME HELPERS ---
+  const getISTTimestamp = () => {
+    const now = new Date();
+    const offset = 5.5 * 60 * 60 * 1000; 
+    const istDate = new Date(now.getTime() + offset);
+    return istDate.toISOString().slice(0, -1); 
+  };
+
+  const universalFormatDate = (dateString) => {
+    if (!dateString) return "—";
+    try {
+      const normalizedDate = dateString.includes('T') ? dateString : dateString.replace(' ', 'T');
+      const date = new Date(normalizedDate);
+      if (isNaN(date.getTime())) return dateString;
+      return date.toLocaleString("en-IN", {
+        timeZone: 'UTC', 
+        day: "2-digit", month: "short", year: "numeric", 
+        hour: "2-digit", minute: "2-digit", hour12: true,
+      });
+    } catch (e) { return dateString; }
+  };
 
   useEffect(() => {
     fetchPayments();
@@ -50,46 +74,58 @@ const CRDashboard = () => {
     setLoading(false);
   };
 
-  // --- NEW: Frontend Filtering Logic ---
-  // This filters the 'payments' array in memory without calling the database again
+  // 1. Apply status filter first
   const filteredPayments = payments.filter(p => 
     statusFilter === 'all' || p.status === statusFilter
   );
 
-  const formatPaymentTime = (timestamp) => {
-    if (!timestamp) return "N/A";
-    try {
-      const date = new Date(timestamp);
-      return date.toLocaleString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      });
-    } catch (e) {
-      return timestamp;
-    }
+  // 2. Apply pagination to the filtered results
+  const totalPages = Math.ceil(filteredPayments.length / rowsPerPage);
+  const paginatedPayments = filteredPayments.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
+  // CSV EXPORT LOGIC
+  const downloadCSV = () => {
+    // Filename format: YEAR_BRANCH_DIVISION.csv (removing spaces from Year)
+    const cleanYear = cr.year.replace(/\s+/g, '');
+    const fileName = `${cleanYear}_${cr.branch}_${cr.division}.csv`;
+
+    const headers = "Name,USN,Amount,UTR,Payment Time,Verified By,Verified At,Status\n";
+    const rows = filteredPayments.map(p => [
+      `"${p.name}"`,
+      `"${p.usn}"`,
+      p.amount,
+      `"${p.utr}"`,
+      `"${universalFormatDate(p.payment_timestamp)}"`,
+      `"${p.verified_by || '—'}"`,
+      `"${universalFormatDate(p.verified_at)}"`,
+      `"${p.status}"`
+    ].join(",")).join("\n");
+
+    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('href', url);
+    a.setAttribute('download', fileName);
+    a.click();
   };
 
   const handleApprove = async (id) => {
-    const { error } = await supabase
-      .from('payments')
-      .update({ 
-        status: 'approved', 
-        verified_by: cr.name, 
-        verified_at: new Date().toISOString() 
-      })
-      .eq('id', id);
+    try {
+      const istNow = getISTTimestamp();
+      const { error } = await supabase
+        .from('payments')
+        .update({ status: 'approved', verified_by: cr.name, verified_at: istNow })
+        .eq('id', id);
 
-    if (error) alert(error.message);
-    else {
+      if (error) throw error;
       await supabase.from('audit_logs').insert([{
-        action: 'approved', performed_by: cr.name, role: 'cr', payment_id: id
+        action: 'approved', performed_by: cr.name, role: 'cr', payment_id: id, timestamp: istNow
       }]);
       fetchPayments();
-    }
+    } catch (err) { alert(err.message); }
   };
 
   const handleRejectSubmit = async () => {
@@ -98,25 +134,20 @@ const CRDashboard = () => {
       alert("Please provide a rejection reason.");
       return;
     }
+    try {
+      const istNow = getISTTimestamp();
+      const { error } = await supabase
+        .from('payments')
+        .update({ status: 'rejected', rejection_reason: finalReason, verified_by: cr.name, verified_at: istNow })
+        .eq('id', rejectModal.paymentId);
 
-    const { error } = await supabase
-      .from('payments')
-      .update({ 
-        status: 'rejected', 
-        rejection_reason: finalReason,
-        verified_by: cr.name, 
-        verified_at: new Date().toISOString() 
-      })
-      .eq('id', rejectModal.paymentId);
-
-    if (error) alert(error.message);
-    else {
+      if (error) throw error;
       await supabase.from('audit_logs').insert([{
-        action: 'rejected', performed_by: cr.name, role: 'cr', payment_id: rejectModal.paymentId, reason: finalReason
+        action: 'rejected', performed_by: cr.name, role: 'cr', payment_id: rejectModal.paymentId, reason: finalReason, timestamp: istNow
       }]);
       setRejectModal({ isOpen: false, paymentId: null, reason: '', isOther: false });
       fetchPayments();
-    }
+    } catch (err) { alert(err.message); }
   };
 
   return (
@@ -128,11 +159,13 @@ const CRDashboard = () => {
             {cr.year} | {cr.branch} | Div: {cr.division} | Welcome, {cr.name}
           </p>
         </div>
-        <Button variant="violet" onClick={logoutCR} className="w-full md:w-auto">Logout</Button>
+        <div className="flex gap-3 w-full md:w-auto">
+          <Button onClick={downloadCSV} variant="cyan" className="flex-1 md:flex-none">Download CSV 📥</Button>
+          <Button variant="violet" onClick={logoutCR} className="flex-1 md:flex-none">Logout</Button>
+        </div>
       </div>
 
-      {/* --- NEW: STATUS FILTER UI (Pill Style) --- */}
-      <div className="flex flex-wrap gap-2 items-center justify-start md:justify-start">
+      <div className="flex flex-wrap gap-2 items-center justify-start">
         <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mr-2">Filter by:</span>
         {[
           { id: 'all', label: 'All' },
@@ -143,7 +176,7 @@ const CRDashboard = () => {
         ].map((filter) => (
           <button
             key={filter.id}
-            onClick={() => setStatusFilter(filter.id)}
+            onClick={() => { setStatusFilter(filter.id); setCurrentPage(1); }} // Reset page on filter
             className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 border ${
               statusFilter === filter.id 
                 ? 'bg-neonCyan/20 border-neonCyan text-neonCyan shadow-[0_0_10px_rgba(0,245,255,0.3)]' 
@@ -160,8 +193,7 @@ const CRDashboard = () => {
           <div className="text-center p-10 text-gray-500 animate-pulse">Loading payments...</div>
         ) : (
           <>
-            {/* DESKTOP TABLE */}
-            <div className="hidden md:block">
+            <div className="hidden lg:block">
               <GlassCard className="overflow-x-auto p-4">
                 <table className="w-full text-left text-sm">
                   <thead>
@@ -170,26 +202,27 @@ const CRDashboard = () => {
                       <th className="p-3">USN</th>
                       <th className="p-3">Amount</th>
                       <th className="p-3">UTR</th>
-                      <th className="p-3">Payment Note</th>
-                      <th className="p-3">Payment Time</th>
+                      <th className="p-3">Bank Txn Time</th>
+                      <th className="p-3">Verified By</th>
+                      <th className="p-3">Verified At</th>
                       <th className="p-3">Status</th>
                       <th className="p-3">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {/* WE NOW MAP OVER filteredPayments INSTEAD OF payments */}
-                    {filteredPayments.map(p => (
+                    {paginatedPayments.map(p => (
                       <tr key={p.id} className="border-b border-glassBorder hover:bg-white/5 transition-colors">
                         <td className="p-3">{p.name}</td>
                         <td className="p-3 font-mono text-xs">{p.usn}</td>
                         <td className="p-3">₹{p.amount}</td>
                         <td className="p-3 font-mono text-xs">{p.utr}</td>
-                        <td className="p-3 text-neonViolet font-mono text-xs">{p.usn}_{p.name.toUpperCase()}</td>
-                        <td className="p-3 text-gray-400 text-xs">{formatPaymentTime(p.payment_timestamp)}</td>
+                        <td className="p-3 text-gray-400 text-xs">{universalFormatDate(p.bank_transaction_time)}</td>
+                        <td className="p-3">{p.verified_by || '—'}</td>
+                        <td className="p-3 text-gray-400 text-xs">{universalFormatDate(p.verified_at)}</td>
                         <td className="p-3"><StatusBadge status={p.status} /></td>
-                        <td className="p-3 flex gap-2">
-                          <button onClick={() => handleApprove(p.id)} className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/50 rounded-md text-xs hover:bg-green-500/40 transition-all">Approve</button>
-                          <button onClick={() => setRejectModal({ isOpen: true, paymentId: p.id, reason: '', isOther: false })} className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/50 rounded-md text-xs hover:bg-red-500/40 transition-all">Reject</button>
+                        <td className="p-3 flex gap-3">
+                          <button onClick={() => handleApprove(p.id)} className="text-green-400 text-xs hover:underline transition-colors">Approve</button>
+                          <button onClick={() => setRejectModal({ isOpen: true, paymentId: p.id, reason: '', isOther: false })} className="text-red-400 text-xs hover:underline transition-colors">Reject</button>
                         </td>
                       </tr>
                     ))}
@@ -198,46 +231,62 @@ const CRDashboard = () => {
               </GlassCard>
             </div>
 
-            {/* MOBILE CARDS */}
-            <div className="grid grid-cols-1 gap-4 md:hidden">
-              {/* WE NOW MAP OVER filteredPayments INSTEAD OF payments */}
-              {filteredPayments.map(p => (
-                <GlassCard key={p.id} className="p-4 space-y-4 border-white/10">
+            {/* Mobile View */}
+            <div className="lg:hidden grid grid-cols-1 gap-4">
+              {paginatedPayments.map(p => (
+                <GlassCard key={p.id} className="p-4 space-y-3 border-white/10">
                   <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-white font-bold">{p.name}</p>
-                      <p className="text-xs text-gray-400 font-mono">{p.usn}</p>
-                    </div>
+                    <div><p className="text-white font-bold">{p.name}</p><p className="text-xs text-neonCyan font-mono">{p.usn}</p></div>
                     <StatusBadge status={p.status} />
                   </div>
-
                   <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs border-y border-white/10 py-3">
-                    <div className="flex flex-col">
-                      <span className="text-gray-500 uppercase text-[10px]">Amount</span>
-                      <span className="text-white font-semibold">₹{p.amount}</span>
-                    </div>
-                    <div className="flex flex-col text-right">
-                      <span className="text-gray-500 uppercase text-[10px]">Time</span>
-                      <span className="text-gray-300">{formatPaymentTime(p.payment_timestamp)}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-gray-500 uppercase text-[10px]">UTR</span>
-                      <span className="text-white font-mono">{p.utr}</span>
-                    </div>
-                    <div className="flex flex-col text-right">
-                      <span className="text-gray-500 uppercase text-[10px]">Note</span>
-                      <span className="text-neonViolet font-mono">{p.usn}_{p.name.toUpperCase()}</span>
-                    </div>
+                    <div className="flex flex-col"><span className="text-gray-500 uppercase text-[10px]">Amount</span><span className="text-white font-semibold">₹{p.amount}</span></div>
+                    <div className="flex flex-col text-right"><span className="text-gray-500 uppercase text-[10px]">Verified At</span><span className="text-gray-300">{universalFormatDate(p.verified_at)}</span></div>
+                    <div className="flex flex-col"><span className="text-gray-500 uppercase text-[10px]">UTR</span><span className="text-white font-mono">{p.utr}</span></div>
+                    <div className="flex flex-col text-right"><span className="text-gray-500 uppercase text-[10px]">Bank Time</span><span className="text-gray-300">{universalFormatDate(p.bank_transaction_time)}</span></div>
                   </div>
-
                   <div className="flex gap-3 pt-2">
-                    <button onClick={() => handleApprove(p.id)} className="flex-1 py-2 bg-green-500/20 text-green-400 border border-green-500/50 rounded-lg text-xs font-bold hover:bg-green-500/40">Approve</button>
-                    <button onClick={() => setRejectModal({ isOpen: true, paymentId: p.id, reason: '', isOther: false })} className="flex-1 py-2 bg-red-500/20 text-red-400 border border-red-500/50 rounded-lg text-xs font-bold hover:bg-red-500/40">Reject</button>
+                    <button onClick={() => handleApprove(p.id)} className="flex-1 py-2 bg-green-500/20 text-green-400 border border-green-500/50 rounded-lg text-xs font-bold hover:bg-green-500/40 transition-colors">Approve</button>
+                    <button onClick={() => setRejectModal({ isOpen: true, paymentId: p.id, reason: '', isOther: false })} className="flex-1 py-2 bg-red-500/20 text-red-400 border border-red-500/50 rounded-lg text-xs font-bold hover:bg-red-500/40 transition-colors">Reject</button>
                   </div>
                 </GlassCard>
               ))}
-              {filteredPayments.length === 0 && <div className="text-center p-10 text-gray-500">No payments found matching this filter.</div>}
             </div>
+
+            {/* PAGINATION UI */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-6">
+                <button 
+                  disabled={currentPage === 1} 
+                  onClick={() => setCurrentPage(prev => prev - 1)}
+                  className="px-3 py-1 rounded-full border border-white/10 text-xs text-gray-400 hover:text-white disabled:opacity-30 transition-all"
+                >
+                  Prev
+                </button>
+                
+                <div className="flex gap-1">
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button 
+                      key={i + 1} 
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`w-8 h-8 rounded-full text-xs font-bold transition-all ${currentPage === i + 1 ? 'bg-neonCyan text-black shadow-[0_0_10px_rgba(0,245,255,0.6)]' : 'bg-white/5 text-gray-400 hover:text-white border border-white/10'}`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <button 
+                  disabled={currentPage === totalPages} 
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  className="px-3 py-1 rounded-full border border-white/10 text-xs text-gray-400 hover:text-white disabled:opacity-30 transition-all"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+
+            {filteredPayments.length === 0 && <div className="text-center p-10 text-gray-500">No payments found matching this filter.</div>}
           </>
         )}
       </div>
@@ -246,51 +295,25 @@ const CRDashboard = () => {
       <AnimatePresence>
         {rejectModal.isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setRejectModal({ isOpen: false, paymentId: null, reason: '', isOther: false })}
-              className="absolute inset-0 bg-darkBg/80 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }} 
-              animate={{ opacity: 1, scale: 1, y: 0 }} 
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative z-10 w-full max-w-md p-6 md:p-8 glass-card border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.1)] rounded-3xl"
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setRejectModal({ isOpen: false, paymentId: null, reason: '', isOther: false })} className="absolute inset-0 bg-darkBg/80 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative z-10 w-full max-w-md p-6 md:p-8 glass-card border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.1)] rounded-3xl">
               <h3 className="text-xl font-bold text-red-400 mb-4 uppercase tracking-wider">Reject Payment</h3>
-              <p className="text-gray-400 text-sm mb-6">Please specify the reason for rejection. This will be visible to the student.</p>
-              
+              <p className="text-gray-400 text-sm mb-6">Please specify the reason for rejection.</p>
               <div className="space-y-4">
                 <div className="flex flex-col gap-2">
                   <label className="text-xs text-gray-500 ml-1">Select Reason</label>
-                  <Select 
-                    options={REJECTION_OPTIONS} 
-                    value={rejectModal.reason} 
-                    onChange={(val) => {
-                      setRejectModal(prev => ({ ...prev, reason: val, isOther: val === 'Other' }));
-                    }} 
-                  />
+                  <Select options={REJECTION_OPTIONS} value={rejectModal.reason} onChange={(val) => { setRejectModal(prev => ({ ...prev, reason: val, isOther: val === 'Other' })); }} />
                 </div>
-
                 {rejectModal.isOther && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="flex flex-col gap-2">
                     <label className="text-xs text-gray-500 ml-1">Specify Custom Reason</label>
-                    <Input 
-                      placeholder="Enter detailed reason..." 
-                      value={rejectModal.reason} 
-                      onChange={(e) => setRejectModal(prev => ({ ...prev, reason: e.target.value }))} 
-                    />
+                    <Input placeholder="Enter detailed reason..." value={rejectModal.reason} onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })} />
                   </motion.div>
                 )}
               </div>
-
               <div className="flex gap-3 mt-8">
-                <Button variant="violet" className="flex-1" onClick={() => setRejectModal({ isOpen: false, paymentId: null, reason: '', isOther: false })}>
-                  Cancel
-                </Button>
-                <Button className="flex-1 bg-red-600 text-white border-red-400 hover:bg-red-700" onClick={handleRejectSubmit}>
-                  Confirm Reject
-                </Button>
+                <Button variant="violet" className="flex-1" onClick={() => setRejectModal({ isOpen: false, paymentId: null, reason: '', isOther: false })}>Cancel</Button>
+                <Button className="flex-1 bg-red-600 text-white border-red-400 hover:bg-red-700" onClick={handleRejectSubmit}>Confirm Reject</Button>
               </div>
             </motion.div>
           </div>

@@ -26,7 +26,7 @@ const PaymentForm = () => {
     branch: BRANCHES[0],
     division: DIVISIONS[0],
     utr: '',
-    payment_timestamp: '',
+    // REMOVED: payment_timestamp
   });
 
   const amount = FEE_STRUCTURE[formData.year];
@@ -68,7 +68,7 @@ const PaymentForm = () => {
       mobile: 'Mobile Number',
       usn: 'USN',
       utr: 'UTR Number',
-      payment_timestamp: 'Payment Timestamp'
+      // REMOVED: payment_timestamp
     };
 
     for (const key in requiredFields) {
@@ -105,13 +105,11 @@ const PaymentForm = () => {
 
   return (
     <div className="relative flex justify-center items-center min-h-screen md:min-h-[80vh] p-4 sm:p-6">
-      {/* Background Orbs */}
       <div className="absolute top-1/4 left-1/4 w-64 h-64 md:w-72 md:h-72 bg-neonCyan/10 rounded-full blur-[100px] md:blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-64 h-64 md:w-72 md:h-72 bg-neonViolet/10 rounded-full blur-[100px] md:blur-[120px] pointer-events-none" />
       
       <GlassCard className="relative w-full max-w-2xl p-6 md:p-12 backdrop-blur-2xl border-white/10 shadow-2xl rounded-3xl">
         
-        {/* Step Indicator - Mobile Optimized */}
         <div className="flex justify-center md:justify-between mb-8 md:mb-12 max-w-md mx-auto">
           {[1, 2].map((i) => (
             <div key={i} className={`flex items-center gap-3 transition-all duration-500 ${step === i ? 'text-neonCyan scale-110' : 'text-gray-500'}`}>
@@ -135,7 +133,6 @@ const PaymentForm = () => {
                     placeholder="Enter full name" 
                     required 
                     value={formData.name} 
-                    // CONSTRAINT: Only alphabets and spaces allowed
                     onChange={(e) => setFormData({...formData, name: e.target.value.replace(/[^a-zA-Z\s]/g, '')})} 
                 />
                 <Input 
@@ -143,7 +140,6 @@ const PaymentForm = () => {
                     placeholder="Enter 10 digit mobile" 
                     required 
                     value={formData.mobile} 
-                    // CONSTRAINT: Only numbers and max 10 digits
                     onChange={(e) => setFormData({...formData, mobile: e.target.value.replace(/[^0-9]/g, '').slice(0, 10)})} 
                 />
                 <Input 
@@ -155,7 +151,6 @@ const PaymentForm = () => {
                     value={formData.usn} 
                     onChange={(e) => setFormData({...formData, usn: e.target.value.toUpperCase()})} 
                 />
-                
                 <Select 
                     label="Year" 
                     options={YEARS} 
@@ -171,13 +166,11 @@ const PaymentForm = () => {
                     required 
                 />
               </div>
-              
               {usnStatus === 'rejected' && (
                 <p className="text-center text-[10px] md:text-xs text-neonCyan italic animate-pulse bg-neonCyan/5 p-2 rounded-lg border border-neonCyan/20">
                   A previous submission with this USN was rejected. You are resubmitting with new details.
                 </p>
               )}
-
               <div className="flex flex-col gap-1">
                 <Select 
                     label="Division" 
@@ -188,7 +181,6 @@ const PaymentForm = () => {
                     required 
                 />
               </div>
-
               <div className="flex justify-end mt-6 md:mt-8">
                 <Button onClick={() => setStep(2)}>Next Step →</Button>
               </div>
@@ -201,17 +193,13 @@ const PaymentForm = () => {
                 className="space-y-6 md:space-y-8"
                 onSubmit={handleSubmit}
             >
-                                <div className="text-center">
-                  {/* NEW: Banking Name Section */}
+                <div className="text-center">
                   <p className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">
                     Banking Name: <span className="text-white font-black">MANOJ KUMAR V</span>
                   </p>
-
-                  {/* QR Code Section */}
                   <div className="inline-block p-4 bg-white rounded-2xl shadow-neon-cyan mb-6 transform hover:scale-105 transition-transform">
                       <QRCodeCanvas value={upiLink} size={window.innerWidth < 768 ? 180 : 200} />
                   </div>
-                  
                   <div className="mb-2">
                       <span className="text-3xl md:text-4xl font-black text-neonCyan drop-shadow-[0_0_10px_rgba(0,245,255,0.5)]">₹{amount}</span>
                   </div>
@@ -225,22 +213,17 @@ const PaymentForm = () => {
                 </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <Input 
-                        label="UTR Number" 
-                        placeholder="12 digit UTR" 
-                        required 
-                        error={duplicates.utr ? "UTR already used!" : null}
-                        value={formData.utr} 
-                        onChange={(e) => setFormData({...formData, utr: e.target.value})} 
-                    />
-                    <Input 
-                        label="Payment Timestamp" 
-                        type="datetime-local" 
-                        required 
-                        value={formData.payment_timestamp} 
-                        onChange={(e) => setFormData({...formData, payment_timestamp: e.target.value})} 
-                    />
+                <div className="flex justify-center w-full">
+                    <div className="w-full max-w-md"> {/* Constrains the width so it doesn't stretch too far */}
+                        <Input 
+                            label="UTR Number" 
+                            placeholder="12 digit UTR" 
+                            required 
+                            error={duplicates.utr ? "UTR already used!" : null}
+                            value={formData.utr} 
+                            onChange={(e) => setFormData({...formData, utr: e.target.value})} 
+                        />
+                    </div>
                 </div>
 
                 <div className="flex flex-col-reverse md:flex-row justify-between gap-4 mt-8">

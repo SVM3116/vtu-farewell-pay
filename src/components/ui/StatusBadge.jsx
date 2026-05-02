@@ -23,7 +23,15 @@ const StatusBadge = ({ status }) => {
   const current = config[status] || config.pending;
 
   return (
-    <span className={`px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider ${current.className}`}>
+    <span className={`
+      inline-flex items-center justify-center 
+      px-2 py-0.5 
+      rounded-full border 
+      text-[10px] font-bold uppercase 
+      whitespace-nowrap 
+      transition-all duration-200
+      ${current.className}
+    `}>
       {current.label}
     </span>
   );

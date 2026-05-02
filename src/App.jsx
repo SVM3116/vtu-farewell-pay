@@ -19,6 +19,7 @@ import CRDashboard from './pages/CR/CRDashboard';
 // Admin Pages
 import AdminLogin from './pages/Admin/AdminLogin';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import CRAccess from './pages/CR/CRAccess';
 
 // --- CINEMATIC LANDING PAGE COMPONENT ---
 const Landing = () => (
@@ -136,6 +137,8 @@ function AppRoutes() {
             </ProtectedRoute>
           </PageWrapper>
         } />
+
+        <Route path="/cr-access" element={<CRAccess />} />
       </Routes>
     </AnimatePresence>
   );
