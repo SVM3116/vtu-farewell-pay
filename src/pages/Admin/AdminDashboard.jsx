@@ -120,6 +120,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleGlobalToggle = async (status) => {
+  if (!window.confirm(`Are you sure you want to ${status ? 'ENABLE' : 'DISABLE'} verification access for ALL CRs?`)) {
+    return;
+  }
+
+  try {
+    const { error } = await supabase
+      .from('cr_accounts')
+      .update({ verification_enabled: status })
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Trigger update for all rows
+
+    if (error) throw error;
+
+    alert(`All CR access ${status ? 'ENABLED' : 'DISABLED'} successfully!`);
+    await fetchAllData(); // Refresh table to show updated toggles
+  } catch (err) {
+    console.error("Global Toggle Error:", err);
+    alert("Failed to update global permissions.");
+  }
+};
+
   const handleProcessCSV = async () => {
     if (!csvFile) return alert("Please select a CSV file first.");
     setIsProcessing(true);
@@ -390,37 +411,87 @@ const AdminDashboard = () => {
               </form>
             </GlassCard>
             <GlassCard className="p-6 overflow-x-auto">
-              <h3 className="text-xl font-bold neon-text-gradient mb-6">Existing CRs</h3>
-              <table className="w-full text-left text-sm">
-                <thead><tr className="text-gray-500 border-b border-glassBorder"><th className="p-3">Name</th><th className="p-3">Mobile</th><th className="p-3">Scope</th></tr></thead>
-               {/* Inside the Existing CRs table mapping */}
-                <tbody>
-                  {crAccounts.map(cr => (
-                    <tr key={cr.id} className="border-b border-glassBorder hover:bg-white/5">
-                      <td className="p-3">{cr.name}</td>
-                      <td className="p-3 font-mono text-xs">{cr.mobile}</td>
-                      <td className="p-3 text-gray-400">{cr.year} {cr.branch} {cr.division}</td>
-                      {/* NEW: Access Toggle */}
-                      <td className="p-3">
-                        <button 
-                          onClick={async () => {
-                            await supabase.from('cr_accounts').update({ verification_enabled: !cr.verification_enabled }).eq('id', cr.id);
-                            fetchAllData();
-                          }}
-                          className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${
-                            cr.verification_enabled 
-                              ? 'bg-green-500/20 text-green-400 border border-green-500/50' 
-                              : 'bg-red-500/20 text-red-400 border border-red-500/50'
-                          }`}
-                        >
-                          {cr.verification_enabled ? 'ACCESS ON' : 'ACCESS OFF'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </GlassCard>
+  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <h3 className="text-xl font-bold neon-text-gradient">Existing CRs</h3>
+    
+    {/* GLOBAL CONTROL - Fixed and Cleaned */}
+    <div className="flex items-center gap-3 bg-white/5 p-2 rounded-full border border-white/10 px-4">
+      <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Global Control:</span>
+      <button 
+        onClick={async () => {
+          const anyDisabled = crAccounts.some(cr => !cr.verification_enabled);
+          const statusToSet = !anyDisabled; // If some are off, turn all on. If all are on, turn all off.
+          
+          if (!window.confirm(`Are you sure you want to ${statusToSet ? 'ENABLE' : 'DISABLE'} verification access for ALL CRs?`)) return;
+
+          try {
+            const { error } = await supabase
+              .from('cr_accounts')
+              .update({ verification_enabled: statusToSet })
+              .neq('id', '00000000-0000-0000-0000-000000000000');
+
+            if (error) throw error;
+            alert(`All CR access ${statusToSet ? 'ENABLED' : 'DISABLED'} successfully!`);
+            await fetchAllData(); 
+          } catch (err) {
+            alert("Failed to update global permissions.");
+          }
+        }}
+        className={`px-3 py-1 rounded-full text-[10px] font-black transition-all duration-300 uppercase ${
+          crAccounts.every(cr => cr.verification_enabled) 
+            ? 'bg-green-500/20 text-green-400 border border-green-500/50 shadow-[0_0_10px_rgba(34,197,94,0.3)]' 
+            : 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.3)]'
+        }`}
+      >
+        {crAccounts.every(cr => cr.verification_enabled) ? 'All Enabled 🟢' : 'Disable All 🔴'}
+      </button>
+    </div>
+  </div>
+
+  <table className="w-full text-left text-sm">
+    <thead>
+      <tr className="text-gray-500 border-b border-glassBorder">
+        <th className="p-3">Name</th>
+        <th className="p-3">Mobile</th>
+        <th className="p-3">Scope</th>
+        <th className="p-3 text-center">Access</th>
+      </tr>
+    </thead>
+    <tbody>
+      {crAccounts.map(cr => (
+        <tr key={cr.id} className="border-b border-glassBorder hover:bg-white/5 transition-colors">
+          <td className="p-3">{cr.name}</td>
+          <td className="p-3 font-mono text-xs">{cr.mobile}</td>
+          <td className="p-3 text-gray-400">{cr.year} {cr.branch} {cr.division}</td>
+          <td className="p-3 text-center">
+            <button 
+              onClick={async () => {
+                try {
+                  const { error } = await supabase
+                    .from('cr_accounts')
+                    .update({ verification_enabled: !cr.verification_enabled })
+                    .eq('id', cr.id);
+                  
+                  if (error) throw error;
+                  await fetchAllData(); 
+                } catch (err) {
+                  alert("Update failed: " + err.message);
+                }
+              }}
+              className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${
+                cr.verification_enabled 
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/50' 
+                  : 'bg-red-500/20 text-red-400 border border-red-500/50'
+              }`}
+            >
+              {cr.verification_enabled ? 'ON' : 'OFF'}
+            </button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</GlassCard>
           </div>
         </div>
       </div>
