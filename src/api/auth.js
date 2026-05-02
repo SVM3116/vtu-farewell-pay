@@ -15,13 +15,16 @@ export const loginCR = async (email, password) => {
   return data;
 };
 
+// 1. Get Current CR
 export const getCurrentCR = () => {
-  const session = localStorage.getItem('cr_session');
-  return session ? JSON.parse(session) : null;
+  const user = localStorage.getItem('cr_user');
+  if (!user) return null;
+  return JSON.parse(user);
 };
 
+// 2. Logout CR
 export const logoutCR = () => {
-  localStorage.removeItem('cr_session');
+  localStorage.removeItem('cr_user');
   window.location.href = '/cr-login';
 };
 

@@ -393,7 +393,32 @@ const AdminDashboard = () => {
               <h3 className="text-xl font-bold neon-text-gradient mb-6">Existing CRs</h3>
               <table className="w-full text-left text-sm">
                 <thead><tr className="text-gray-500 border-b border-glassBorder"><th className="p-3">Name</th><th className="p-3">Mobile</th><th className="p-3">Scope</th></tr></thead>
-                <tbody>{crAccounts.map(cr => <tr key={cr.id} className="border-b border-glassBorder hover:bg-white/5"><td className="p-3">{cr.name}</td><td className="p-3 font-mono text-xs">{cr.mobile}</td><td className="p-3 text-gray-400">{cr.year} {cr.branch} {cr.division}</td></tr>)}</tbody>
+               {/* Inside the Existing CRs table mapping */}
+                <tbody>
+                  {crAccounts.map(cr => (
+                    <tr key={cr.id} className="border-b border-glassBorder hover:bg-white/5">
+                      <td className="p-3">{cr.name}</td>
+                      <td className="p-3 font-mono text-xs">{cr.mobile}</td>
+                      <td className="p-3 text-gray-400">{cr.year} {cr.branch} {cr.division}</td>
+                      {/* NEW: Access Toggle */}
+                      <td className="p-3">
+                        <button 
+                          onClick={async () => {
+                            await supabase.from('cr_accounts').update({ verification_enabled: !cr.verification_enabled }).eq('id', cr.id);
+                            fetchAllData();
+                          }}
+                          className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${
+                            cr.verification_enabled 
+                              ? 'bg-green-500/20 text-green-400 border border-green-500/50' 
+                              : 'bg-red-500/20 text-red-400 border border-red-500/50'
+                          }`}
+                        >
+                          {cr.verification_enabled ? 'ACCESS ON' : 'ACCESS OFF'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </GlassCard>
           </div>

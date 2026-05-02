@@ -4,7 +4,7 @@ import { supabase } from '../../api/supabase';
 import { getCurrentCR, logoutCR } from '../../api/auth';
 import GlassCard from '../../components/ui/GlassCard';
 import Button from '../../components/ui/Button';
-import StampBadge from '../../components/ui/StampBadge'; // NEW STAMP BADGE
+import StampBadge from '../../components/ui/StampBadge'; 
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 
@@ -17,6 +17,9 @@ const CRDashboard = () => {
   // --- PAGINATION STATE ---
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 20;
+
+  // --- PERMISSION STATE ---
+  const [canVerify, setCanVerify] = useState(true);
 
   const [rejectModal, setRejectModal] = useState({
     isOpen: false,
@@ -56,8 +59,21 @@ const CRDashboard = () => {
   };
 
   useEffect(() => {
+    // 1. Fetch the payments
     fetchPayments();
+    // 2. Check if this CR has permission to verify
+    checkPermissions();
   }, []);
+
+  const checkPermissions = async () => {
+    const { data } = await supabase
+      .from('cr_accounts')
+      .select('verification_enabled')
+      .eq('email', cr.email)
+      .single();
+    
+    if (data) setCanVerify(data.verification_enabled);
+  };
 
   const fetchPayments = async () => {
     setLoading(true);
@@ -74,33 +90,24 @@ const CRDashboard = () => {
     setLoading(false);
   };
 
-  // 1. Apply status filter first
   const filteredPayments = payments.filter(p => 
     statusFilter === 'all' || p.status === statusFilter
   );
 
-  // 2. Apply pagination to the filtered results
   const totalPages = Math.ceil(filteredPayments.length / rowsPerPage);
   const paginatedPayments = filteredPayments.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
 
-  // CSV EXPORT LOGIC
   const downloadCSV = () => {
     const cleanYear = cr.year.replace(/\s+/g, '');
     const fileName = `${cleanYear}_${cr.branch}_${cr.division}.csv`;
-
     const headers = "Name,USN,Amount,UTR,Payment Time,Verified By,Verified At,Status\n";
     const rows = filteredPayments.map(p => [
-      `"${p.name}"`,
-      `"${p.usn}"`,
-      p.amount,
-      `"${p.utr}"`,
+      `"${p.name}"`, `"${p.usn}"`, p.amount, `"${p.utr}"`,
       `"${universalFormatDate(p.payment_timestamp)}"`,
-      `"${p.verified_by || '—'}"`,
-      `"${universalFormatDate(p.verified_at)}"`,
-      `"${p.status}"`
+      `"${p.verified_by || '—'}"`, `"${universalFormatDate(p.verified_at)}"`, `"${p.status}"`
     ].join(",")).join("\n");
 
     const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
@@ -112,6 +119,7 @@ const CRDashboard = () => {
   };
 
   const handleApprove = async (id) => {
+    if (!canVerify) return alert("Your verification access is currently disabled by the Admin.");
     try {
       const istNow = getISTTimestamp();
       const { error } = await supabase
@@ -128,6 +136,7 @@ const CRDashboard = () => {
   };
 
   const handleRejectSubmit = async () => {
+    if (!canVerify) return alert("Your verification access is currently disabled by the Admin.");
     const finalReason = rejectModal.reason;
     if (!finalReason || finalReason.trim() === '') {
       alert("Please provide a rejection reason.");
@@ -164,22 +173,25 @@ const CRDashboard = () => {
         </div>
       </div>
 
+      {/* PERMISSION ALERT */}
+      {!canVerify && (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/50 rounded-xl text-amber-400 text-sm text-center font-medium animate-pulse">
+          ⚠️ Verification access is currently disabled by the Admin. Please wait for permission.
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2 items-center justify-start">
         <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mr-2">Filter by:</span>
         {[
-          { id: 'all', label: 'All' },
-          { id: 'pending', label: 'Pending' },
-          { id: 'approved', label: 'Approved' },
-          { id: 'rejected', label: 'Rejected' },
+          { id: 'all', label: 'All' }, { id: 'pending', label: 'Pending' },
+          { id: 'approved', label: 'Approved' }, { id: 'rejected', label: 'Rejected' },
           { id: 'disputed', label: 'Disputed' }
         ].map((filter) => (
           <button
             key={filter.id}
             onClick={() => { setStatusFilter(filter.id); setCurrentPage(1); }}
             className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 border ${
-              statusFilter === filter.id 
-                ? 'bg-neonCyan/20 border-neonCyan text-neonCyan shadow-[0_0_10px_rgba(0,245,255,0.3)]' 
-                : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/30'
+              statusFilter === filter.id ? 'bg-neonCyan/20 border-neonCyan text-neonCyan shadow-[0_0_10px_rgba(0,245,255,0.3)]' : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/30'
             }`}
           >
             {filter.label}
@@ -192,7 +204,6 @@ const CRDashboard = () => {
           <div className="text-center p-10 text-gray-500 animate-pulse">Loading payments...</div>
         ) : (
           <>
-            {/* DESKTOP TABLE */}
             <div className="hidden lg:block">
               <GlassCard className="overflow-x-auto p-4">
                 <table className="w-full text-left text-sm">
@@ -206,7 +217,7 @@ const CRDashboard = () => {
                       <th className="p-3">Verified By</th>
                       <th className="p-3">Verified At</th>
                       <th className="p-3">Status</th>
-                      <th className="p-3">Actions</th>
+                      {canVerify && <th className="p-3">Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -224,10 +235,12 @@ const CRDashboard = () => {
                             <StampBadge status={p.status} verified_by={p.verified_by} />
                           </div>
                         </td>
-                        <td className="p-3 flex gap-3">
-                          <button onClick={() => handleApprove(p.id)} className="text-green-400 text-xs hover:underline transition-colors">Approve</button>
-                          <button onClick={() => setRejectModal({ isOpen: true, paymentId: p.id, reason: '', isOther: false })} className="text-red-400 text-xs hover:underline transition-colors">Reject</button>
-                        </td>
+                        {canVerify && (
+                          <td className="p-3 flex gap-3">
+                            <button onClick={() => handleApprove(p.id)} className="text-green-400 text-xs hover:underline transition-colors">Approve</button>
+                            <button onClick={() => setRejectModal({ isOpen: true, paymentId: p.id, reason: '', isOther: false })} className="text-red-400 text-xs hover:underline transition-colors">Reject</button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -235,19 +248,12 @@ const CRDashboard = () => {
               </GlassCard>
             </div>
 
-            {/* MOBILE CARDS */}
             <div className="lg:hidden grid grid-cols-1 gap-4">
               {paginatedPayments.map(p => (
                 <GlassCard key={p.id} className="p-4 space-y-3 border-white/10">
                   <div className="relative flex justify-between items-start">
-                    <div>
-                      <p className="text-white font-bold">{p.name}</p>
-                      <p className="text-xs text-neonCyan font-mono">{p.usn}</p>
-                    </div>
-                    {/* STAMP BADGE - OVERLAPPING TOP RIGHT */}
-                    <div className="absolute -top-3 -right-3 z-10">
-                      <StampBadge status={p.status} verified_by={p.verified_by} />
-                    </div>
+                    <div><p className="text-white font-bold">{p.name}</p><p className="text-xs text-neonCyan font-mono">{p.usn}</p></div>
+                    <div className="absolute -top-3 -right-3 z-10"><StampBadge status={p.status} verified_by={p.verified_by} /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs border-y border-white/10 py-3">
                     <div className="flex flex-col"><span className="text-gray-500 uppercase text-[10px]">Amount</span><span className="text-white font-semibold">₹{p.amount}</span></div>
@@ -255,42 +261,25 @@ const CRDashboard = () => {
                     <div className="flex flex-col"><span className="text-gray-500 uppercase text-[10px]">UTR</span><span className="text-white font-mono">{p.utr}</span></div>
                     <div className="flex flex-col text-right"><span className="text-gray-500 uppercase text-[10px]">Bank Time</span><span className="text-gray-300">{universalFormatDate(p.bank_transaction_time)}</span></div>
                   </div>
-                  <div className="flex gap-3 pt-2">
-                    <button onClick={() => handleApprove(p.id)} className="flex-1 py-2 bg-green-500/20 text-green-400 border border-green-500/50 rounded-lg text-xs font-bold hover:bg-green-500/40 transition-colors">Approve</button>
-                    <button onClick={() => setRejectModal({ isOpen: true, paymentId: p.id, reason: '', isOther: false })} className="flex-1 py-2 bg-red-500/20 text-red-400 border border-red-500/50 rounded-lg text-xs font-bold hover:bg-red-500/40 transition-colors">Reject</button>
-                  </div>
+                  {canVerify && (
+                    <div className="flex gap-3 pt-2">
+                      <button onClick={() => handleApprove(p.id)} className="flex-1 py-2 bg-green-500/20 text-green-400 border border-green-500/50 rounded-lg text-xs font-bold hover:bg-green-500/40 transition-colors">Approve</button>
+                      <button onClick={() => setRejectModal({ isOpen: true, paymentId: p.id, reason: '', isOther: false })} className="flex-1 py-2 bg-red-500/20 text-red-400 border border-red-500/50 rounded-lg text-xs font-bold hover:bg-red-500/40 transition-colors">Reject</button>
+                    </div>
+                  )}
                 </GlassCard>
               ))}
             </div>
 
-            {/* PAGINATION UI */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-2 mt-6">
-                <button 
-                  disabled={currentPage === 1} 
-                  onClick={() => setCurrentPage(prev => prev - 1)}
-                  className="px-3 py-1 rounded-full border border-white/10 text-xs text-gray-400 hover:text-white disabled:opacity-30 transition-all"
-                >
-                  Prev
-                </button>
+                <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className="px-3 py-1 rounded-full border border-white/10 text-xs text-gray-400 hover:text-white disabled:opacity-30 transition-all">Prev</button>
                 <div className="flex gap-1">
                   {[...Array(totalPages)].map((_, i) => (
-                    <button 
-                      key={i + 1} 
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={`w-8 h-8 rounded-full text-xs font-bold transition-all ${currentPage === i + 1 ? 'bg-neonCyan text-black shadow-[0_0_10px_rgba(0,245,255,0.6)]' : 'bg-white/5 text-gray-400 hover:text-white border border-white/10'}`}
-                    >
-                      {i + 1}
-                    </button>
+                    <button key={i + 1} onClick={() => setCurrentPage(i + 1)} className={`w-8 h-8 rounded-full text-xs font-bold transition-all ${currentPage === i + 1 ? 'bg-neonCyan text-black shadow-[0_0_10px_rgba(0,245,255,0.6)]' : 'bg-white/5 text-gray-400 hover:text-white border border-white/10'}`}>{i + 1}</button>
                   ))}
                 </div>
-                <button 
-                  disabled={currentPage === totalPages} 
-                  onClick={() => setCurrentPage(prev => prev + 1)}
-                  className="px-3 py-1 rounded-full border border-white/10 text-xs text-gray-400 hover:text-white disabled:opacity-30 transition-all"
-                >
-                  Next
-                </button>
+                <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)} className="px-3 py-1 rounded-full border border-white/10 text-xs text-gray-400 hover:text-white disabled:opacity-30 transition-all">Next</button>
               </div>
             )}
 

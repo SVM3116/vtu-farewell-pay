@@ -42,7 +42,7 @@ export const submitPayment = async (paymentData) => {
         .from('payments')
         .update({
           utr: paymentData.utr,
-          payment_timestamp: paymentData.payment_timestamp,
+          // REMOVED: payment_timestamp as it's now handled by the bank CSV
           mobile: paymentData.mobile,
           status: 'pending',
           rejection_reason: null,
@@ -54,7 +54,7 @@ export const submitPayment = async (paymentData) => {
 
       if (updateError) throw updateError;
 
-      // FIX: Save resubmission time in IST
+      // FIX: Save resubmission audit log in IST
       await supabase.from('audit_logs').insert({
         action: 'resubmitted',
         performed_by: 'Student',
@@ -68,6 +68,7 @@ export const submitPayment = async (paymentData) => {
     }
   }
 
+  // Standard Insert
   const { data, error: insertError } = await supabase
     .from('payments')
     .insert([paymentData])
