@@ -4,7 +4,7 @@ import { supabase } from '../../api/supabase';
 import { getCurrentCR, logoutCR } from '../../api/auth';
 import GlassCard from '../../components/ui/GlassCard';
 import Button from '../../components/ui/Button';
-import StatusBadge from '../../components/ui/StatusBadge';
+import StampBadge from '../../components/ui/StampBadge'; // NEW STAMP BADGE
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 
@@ -88,7 +88,6 @@ const CRDashboard = () => {
 
   // CSV EXPORT LOGIC
   const downloadCSV = () => {
-    // Filename format: YEAR_BRANCH_DIVISION.csv (removing spaces from Year)
     const cleanYear = cr.year.replace(/\s+/g, '');
     const fileName = `${cleanYear}_${cr.branch}_${cr.division}.csv`;
 
@@ -176,7 +175,7 @@ const CRDashboard = () => {
         ].map((filter) => (
           <button
             key={filter.id}
-            onClick={() => { setStatusFilter(filter.id); setCurrentPage(1); }} // Reset page on filter
+            onClick={() => { setStatusFilter(filter.id); setCurrentPage(1); }}
             className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 border ${
               statusFilter === filter.id 
                 ? 'bg-neonCyan/20 border-neonCyan text-neonCyan shadow-[0_0_10px_rgba(0,245,255,0.3)]' 
@@ -193,6 +192,7 @@ const CRDashboard = () => {
           <div className="text-center p-10 text-gray-500 animate-pulse">Loading payments...</div>
         ) : (
           <>
+            {/* DESKTOP TABLE */}
             <div className="hidden lg:block">
               <GlassCard className="overflow-x-auto p-4">
                 <table className="w-full text-left text-sm">
@@ -219,7 +219,11 @@ const CRDashboard = () => {
                         <td className="p-3 text-gray-400 text-xs">{universalFormatDate(p.bank_transaction_time)}</td>
                         <td className="p-3">{p.verified_by || '—'}</td>
                         <td className="p-3 text-gray-400 text-xs">{universalFormatDate(p.verified_at)}</td>
-                        <td className="p-3"><StatusBadge status={p.status} /></td>
+                        <td className="p-3">
+                          <div className="flex items-center justify-center">
+                            <StampBadge status={p.status} verified_by={p.verified_by} />
+                          </div>
+                        </td>
                         <td className="p-3 flex gap-3">
                           <button onClick={() => handleApprove(p.id)} className="text-green-400 text-xs hover:underline transition-colors">Approve</button>
                           <button onClick={() => setRejectModal({ isOpen: true, paymentId: p.id, reason: '', isOther: false })} className="text-red-400 text-xs hover:underline transition-colors">Reject</button>
@@ -231,13 +235,19 @@ const CRDashboard = () => {
               </GlassCard>
             </div>
 
-            {/* Mobile View */}
+            {/* MOBILE CARDS */}
             <div className="lg:hidden grid grid-cols-1 gap-4">
               {paginatedPayments.map(p => (
                 <GlassCard key={p.id} className="p-4 space-y-3 border-white/10">
-                  <div className="flex justify-between items-start">
-                    <div><p className="text-white font-bold">{p.name}</p><p className="text-xs text-neonCyan font-mono">{p.usn}</p></div>
-                    <StatusBadge status={p.status} />
+                  <div className="relative flex justify-between items-start">
+                    <div>
+                      <p className="text-white font-bold">{p.name}</p>
+                      <p className="text-xs text-neonCyan font-mono">{p.usn}</p>
+                    </div>
+                    {/* STAMP BADGE - OVERLAPPING TOP RIGHT */}
+                    <div className="absolute -top-3 -right-3 z-10">
+                      <StampBadge status={p.status} verified_by={p.verified_by} />
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs border-y border-white/10 py-3">
                     <div className="flex flex-col"><span className="text-gray-500 uppercase text-[10px]">Amount</span><span className="text-white font-semibold">₹{p.amount}</span></div>
@@ -263,7 +273,6 @@ const CRDashboard = () => {
                 >
                   Prev
                 </button>
-                
                 <div className="flex gap-1">
                   {[...Array(totalPages)].map((_, i) => (
                     <button 
@@ -275,7 +284,6 @@ const CRDashboard = () => {
                     </button>
                   ))}
                 </div>
-
                 <button 
                   disabled={currentPage === totalPages} 
                   onClick={() => setCurrentPage(prev => prev + 1)}
