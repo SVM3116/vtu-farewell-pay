@@ -26,7 +26,6 @@ const PaymentForm = () => {
     branch: BRANCHES[0],
     division: DIVISIONS[0],
     utr: '',
-    // REMOVED: payment_timestamp
   });
 
   const amount = FEE_STRUCTURE[formData.year];
@@ -68,7 +67,6 @@ const PaymentForm = () => {
       mobile: 'Mobile Number',
       usn: 'USN',
       utr: 'UTR Number',
-      // REMOVED: payment_timestamp
     };
 
     for (const key in requiredFields) {
@@ -197,9 +195,19 @@ const PaymentForm = () => {
                   <p className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">
                     Banking Name: <span className="text-white font-black">MANOJ KUMAR V</span>
                   </p>
+                  
+                  {/* --- QR CODE FADE-IN ANIMATION --- */}
                   <div className="inline-block p-4 bg-white rounded-2xl shadow-neon-cyan mb-6 transform hover:scale-105 transition-transform">
-                      <QRCodeCanvas value={upiLink} size={window.innerWidth < 768 ? 180 : 200} />
+                      <motion.div 
+                        key={amount} // Re-triggers animation when amount (Year) changes
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                      >
+                        <QRCodeCanvas value={upiLink} size={window.innerWidth < 768 ? 180 : 200} />
+                      </motion.div>
                   </div>
+                  
                   <div className="mb-2">
                       <span className="text-3xl md:text-4xl font-black text-neonCyan drop-shadow-[0_0_10px_rgba(0,245,255,0.5)]">₹{amount}</span>
                   </div>
@@ -214,7 +222,7 @@ const PaymentForm = () => {
                 </div>
 
                 <div className="flex justify-center w-full">
-                    <div className="w-full max-w-md"> {/* Constrains the width so it doesn't stretch too far */}
+                    <div className="w-full max-w-md"> 
                         <Input 
                             label="UTR Number" 
                             placeholder="12 digit UTR" 

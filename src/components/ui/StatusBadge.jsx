@@ -8,7 +8,8 @@ const StatusBadge = ({ status }) => {
     },
     pending: {
       label: 'Pending ⏳',
-      className: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.2)] animate-pulse',
+      // Replaced 'animate-pulse' with our custom 'animate-pending-glow'
+      className: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.2)] animate-pending-glow',
     },
     rejected: {
       label: 'Rejected ❌',
