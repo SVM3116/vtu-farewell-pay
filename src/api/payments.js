@@ -11,6 +11,9 @@ const getISTTime = () => {
 
 // Check if a USN or UTR already exists in the database
 export const checkDuplicate = async (column, value) => {
+  // If payment is CASH, we don't check for UTR duplicates
+  if (column === 'utr' && value === 'CASH') return false;
+
   const { data, error } = await supabase
     .from('payments')
     .select('id')
@@ -21,40 +24,49 @@ export const checkDuplicate = async (column, value) => {
   return !!data; 
 };
 
-// Submit payment to the database with Resubmission Logic
+// Submit payment to the database with Smart Resubmission Logic
 export const submitPayment = async (paymentData) => {
+  // 1. Check if this USN has already submitted
   const { data: existing, error: fetchError } = await supabase
     .from('payments')
-    .select('*')
+    .select('id, status')
     .eq('usn', paymentData.usn)
     .single();
 
+  if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+
   if (existing) {
-    if (existing.status === 'pending') {
-      throw new Error("Your payment is already submitted and under review.");
-    }
+    // Block if already approved or pending
     if (existing.status === 'approved') {
       throw new Error("Your payment is already approved. No action needed.");
     }
+    if (existing.status === 'pending') {
+      throw new Error("Your payment is already submitted and under review. Please wait.");
+    }
     
+    // Handle Resubmission for REJECTED payments
     if (existing.status === 'rejected') {
       const { error: updateError } = await supabase
         .from('payments')
         .update({
-          utr: paymentData.utr,
-          // REMOVED: payment_timestamp as it's now handled by the bank CSV
+          name: paymentData.name,
           mobile: paymentData.mobile,
-          status: 'pending',
-          rejection_reason: null,
-          verified_by: null,
-          verified_at: null,
-          amount_flag: false,
+          utr: paymentData.utr, // Will be 'CASH' or actual UTR
+          amount: paymentData.amount,
+          year: paymentData.year,
+          branch: paymentData.branch,
+          division: paymentData.division,
+          status: 'pending',      // Reset to pending for re-verification
+          rejection_reason: null, // Clear old reason
+          verified_by: null,      // Clear old verifier
+          verified_at: null,      // Clear old verification date
+          amount_flag: false,     // Reset flags
         })
         .eq('id', existing.id);
 
       if (updateError) throw updateError;
 
-      // FIX: Save resubmission audit log in IST
+      // LOG the resubmission in Audit Logs (IST)
       await supabase.from('audit_logs').insert({
         action: 'resubmitted',
         performed_by: 'Student',
@@ -62,16 +74,23 @@ export const submitPayment = async (paymentData) => {
         payment_id: existing.id,
         usn: paymentData.usn,
         timestamp: getISTTime(), 
+        reason: 'Resubmitted after rejection'
       });
 
       return { success: true, resubmitted: true };
     }
   }
 
-  // Standard Insert
+  // Standard New Insertion
   const { data, error: insertError } = await supabase
     .from('payments')
-    .insert([paymentData])
+    .insert([
+      { 
+        ...paymentData, 
+        status: 'pending',
+        // Note: updated_at is handled by the Database Trigger we created in SQL
+      }
+    ])
     .select();
 
   if (insertError) throw insertError;
@@ -109,6 +128,7 @@ export const getApprovedUTRs = async () => {
     .select('utr')
     .eq('status', 'approved');
   if (error) throw error;
+  // We use a Set for O(1) lookup speed
   return new Set((data || []).map(item => item.utr));
 };
 
