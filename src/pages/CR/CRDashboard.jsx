@@ -38,42 +38,23 @@ const CRDashboard = () => {
 
   // --- TIME HELPERS ---
   const getISTTimestamp = () => {
-  // Return a standard ISO string. 
-  // Supabase stores this as UTC, which is the correct standard.
-  return new Date().toISOString(); 
-};
+    const now = new Date();
+    const offset = 5.5 * 60 * 60 * 1000; 
+    const istDate = new Date(now.getTime() + offset);
+    return istDate.toISOString().slice(0, -1); 
+  };
 
-  const universalFormatDate = (dateString, isUtc = true) => {
-  if (!dateString) return "—";
-  try {
-    // 1. Normalize the date string
-    let normalizedDate = dateString.includes('T') 
-      ? dateString 
-      : dateString.replace(' ', 'T');
-
-    // 2. THE KEY FIX: If it's NOT UTC (like Bank Time), 
-    // we remove any 'Z' or timezone offset to force the browser to treat it as local time.
-    if (!isUtc) {
-      normalizedDate = normalizedDate.replace('Z', '').split('+')[0];
-    }
-
-    const date = new Date(normalizedDate);
-    if (isNaN(date.getTime())) return dateString;
-
-    // 3. Formatting
-    return date.toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  } catch (e) {
-    return dateString; 
-  }
-};
-
+  const universalFormatDate = (dateString) => {
+    if (!dateString) return "—";
+    try {
+      const normalizedDate = dateString.includes('T') ? dateString : dateString.replace(' ', 'T');
+      const date = new Date(normalizedDate);
+      if (isNaN(date.getTime())) return dateString;
+      return date.toLocaleString("en-IN", {
+        timeZone: 'UTC', day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true,
+      });
+    } catch (e) { return dateString; }
+  };
   useEffect(() => {
     fetchPayments();
     checkPermissions();
@@ -261,7 +242,7 @@ const CRDashboard = () => {
                       <th className="p-3">Mobile</th>
                       <th className="p-3">Year/Branch</th>
                       <th className="p-3">UTR / Method</th>
-                      <th className="p-3">Sub. Time</th>
+                     
                       <th className="p-3">Bank Time</th>
                       <th className="p-3">Verified By</th>
                       <th className="p-3">Verified At</th>
@@ -286,7 +267,7 @@ const CRDashboard = () => {
                               <span className="text-gray-400">{p.utr || '—'}</span>
                             )}
                           </td>
-                          <td className="p-3 text-gray-400 text-xs">{universalFormatDate(p.created_at, true)}</td>
+                          {/* <td className="p-3 text-gray-400 text-xs">{universalFormatDate(p.created_at,true)}</td> */}
                           <td className="p-3 text-gray-400 text-xs">{universalFormatDate(p.bank_transaction_time, false)}</td>
                           <td className="p-3">{p.verified_by || '—'}</td>
                           <td className="p-3 text-gray-400 text-xs">{universalFormatDate(p.verified_at, true)}</td>
