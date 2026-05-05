@@ -276,7 +276,7 @@ const CRDashboard = () => {
 
                       return (
                         <tr key={p.id} className="border-b border-glassBorder hover:bg-white/5 transition-colors">
-                          <td className="p-3 font-medium">{p.name}</td>
+                          <td className="p-3 font-medium">{p.name} - ({p.usn}) </td>
                           <td className="p-3 font-mono text-xs">{p.mobile}</td>
                           <td className="p-3 text-gray-400">{p.year} {p.branch}</td>
                           <td className="p-3 font-mono text-xs">
