@@ -84,7 +84,9 @@ const PaymentForm = () => {
     }
 
     // Set UTR to 'CASH' if cash is selected, otherwise use the input
-    const finalUtr = paymentMethod === 'cash' ? 'CASH' : formData.utr;
+    const finalUtr = paymentMethod === 'cash' ? `CASH_${formData.usn}` : formData.utr;
+    
+    
 
     if (paymentMethod === 'digital' && (!finalUtr || finalUtr.trim() === '')) {
       alert("Please enter your UTR Number for digital payments.");

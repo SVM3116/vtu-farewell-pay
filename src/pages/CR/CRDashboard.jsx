@@ -252,7 +252,7 @@ const CRDashboard = () => {
                   </thead>
                   <tbody>
                     {paginatedPayments.map(p => {
-                      const isCash = p.utr === 'CASH';
+                      const isCash = p.utr === `CASH_${p.usn}`;
                       const isLocked = !isCash || !canVerify;
 
                       return (
@@ -304,7 +304,7 @@ const CRDashboard = () => {
 
             <div className="lg:hidden grid grid-cols-1 gap-4">
               {paginatedPayments.map(p => {
-                const isCash = p.utr === 'CASH';
+                const isCash = p.utr === `CASH_${p.usn}`;
                 const isLocked = !isCash || !canVerify;
 
                 return (
