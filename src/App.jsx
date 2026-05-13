@@ -17,6 +17,8 @@ import CRDashboard from './pages/CR/CRDashboard';
 import AdminLogin from './pages/Admin/AdminLogin';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import CRAccess from './pages/CR/CRAccess';
+import ExpenseLedger from './pages/Expenses/ExpenseLedger'; // Added ExpenseLedger
+import PaymentLedger from './pages/Payments/PaymentLedger';
 
 // --- GLOBAL PAGE TRANSITION WRAPPER ---
 // This ensures every page fades in and slides up consistently
@@ -53,6 +55,11 @@ function AppRoutes() {
             <PageWrapper><StatusCheck /></PageWrapper>
           </PageTransition>
         } />
+        <Route path="/expenses" element={ // Added /expenses route
+          <PageTransition>
+            <PageWrapper><ExpenseLedger /></PageWrapper>
+          </PageTransition>
+        } />
 
         {/* CR PROTECTED ROUTES */}
         <Route path="/cr-login" element={
@@ -85,6 +92,8 @@ function AppRoutes() {
             </PageWrapper>
           </PageTransition>
         } />
+
+        <Route path="/payments" element={<PageTransition><PageWrapper><PaymentLedger /></PageWrapper></PageTransition>} /> 
 
         <Route path="/cr-access" element={
           <PageTransition>

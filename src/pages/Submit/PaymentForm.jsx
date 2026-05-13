@@ -85,7 +85,7 @@ const PaymentForm = () => {
 
     // Set UTR to 'CASH' if cash is selected, otherwise use the input
     const finalUtr = paymentMethod === 'cash' ? `CASH_${formData.usn}` : formData.utr;
-    
+    // FIXED: Changed 'CASH' to `CASH_${formData.usn}` to avoid duplicate key database errors
     
 
     if (paymentMethod === 'digital' && (!finalUtr || finalUtr.trim() === '')) {

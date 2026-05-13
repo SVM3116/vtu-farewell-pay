@@ -8,8 +8,9 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { name: 'Submit Payment', path: '/submit' },
+    { name: 'Payments', path: '/payments' }, // Updated for post-event
     { name: 'Check Status', path: '/status' },
+    { name: 'Expenses', path: '/expenses' },
     { name: 'CR Login', path: '/cr-login' },
   ];
 
@@ -26,7 +27,7 @@ const Navbar = () => {
           className="h-11 w-11 rounded-full object-cover ring-2 ring-neonCyan/30 group-hover:ring-neonCyan/60 transition-all duration-300" 
         />
         <span className="text-xl font-black text-white group-hover:text-neonCyan transition-colors duration-300 hidden sm:block tracking-tight">
-          Farewell '26
+          CELESTIA 2K26
         </span>
       </Link>
 
@@ -86,7 +87,8 @@ const Navbar = () => {
         </button>
       </div>
 
-      {/* --- MOBILE MENU --- */}
+      {/* --- MOBILE MENU (With Dark Background Layer) --- */}
+     {/* --- MOBILE MENU (With Solid Dark Background) --- */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div 
@@ -94,7 +96,8 @@ const Navbar = () => {
             animate={{ opacity: 1, height: '100vh' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.4, ease: "circOut" }}
-            className="absolute top-20 left-0 w-full bg-[#0a0f1e]/98 backdrop-blur-2xl z-40 flex flex-col items-center pt-12 px-6 overflow-hidden"
+            // CHANGED: Removed opacity/blur and used a solid, deep navy background
+            className="absolute top-20 left-0 w-full bg-[#0a0f1e] z-40 flex flex-col items-center pt-12 px-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
           >
             <div className="flex flex-col items-center gap-3 mb-12 text-center">
               <img src="/logo-vtu.png" alt="VTU Logo" className="h-16 w-16 mb-4" />
@@ -102,7 +105,8 @@ const Navbar = () => {
               <p className="text-neonCyan text-sm font-black uppercase tracking-widest">8th & 9th May 2026</p>
             </div>
 
-            <div className="w-full h-px bg-neonCyan/20 mb-12" />
+            {/* Divider */}
+            <div className="w-full h-px bg-white/10 mb-12" />
 
             <div className="flex flex-col items-center gap-8 w-full">
               {navLinks.map((link, idx) => (
