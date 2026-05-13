@@ -166,17 +166,17 @@ const LandingPage = () => {
           className="flex flex-col sm:flex-row gap-6 md:gap-8 w-full sm:w-auto"
         >
           <Link 
-            to="/payments" 
+            to="/expenses" 
             className="group relative px-12 py-5 bg-neonCyan text-darkBg font-black text-lg rounded-full hover:scale-105 transition-all duration-300 shadow-[0_0_30px_rgba(0,245,255,0.4)] hover:shadow-[0_0_45px_rgba(0,245,255,0.6)] text-center"
           >
-            View Payment Ledger
+            View Expenses
           </Link>
           
           <Link 
-            to="/status" 
+            to="/payments" 
             className="px-12 py-5 border-2 border-neonCyan/50 text-neonCyan font-bold text-lg rounded-full hover:bg-neonCyan/10 transition-all duration-300 backdrop-blur-sm text-center"
           >
-            Check My Status
+            View Payments
           </Link>
         </motion.div>
 
