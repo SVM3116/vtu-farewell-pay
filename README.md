@@ -302,7 +302,7 @@ VTU-FAREWELL-PAY/
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/vtu-farewell-pay.git
+git clone https://github.com/SVM3116/vtu-farewell-pay.git
 
 # Navigate into the project
 cd vtu-farewell-pay
@@ -408,7 +408,7 @@ rejected ──→  resubmitted ──→  pending    (Student, no cooldown)
 
 ## 🧑‍💻 Developed By
 
-**ONE RUPEE**  
+**MANOJ KUMAR V**  
 3rd Year, CSBS  
 Visvesvaraya Technological University, Belagavi  
 
