@@ -4,7 +4,7 @@
 **Event:** Farewell Day for the 4th Year Batch of 2022–23  
 **Event Dates:** 8th & 9th May 2026  
 **Live Deployment:** [vtu-farewell-pay.vercel.app](https://vtu-farewell-pay.vercel.app/)  
-**Developed By:** ONE RUPEE — 3rd Year, CSBS, VTU Belagavi
+**Developed By:** MANOJ KUMAR V — 3rd Year, CSBS, VTU Belagavi
 
 ---
 
